@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Products" %}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1>{% translate "Products" %}</h1>
+
+  <div class="row mb-4">
+    <div class="col">
+      <p class="lead">{% translate "Manage your products." %}</p>
+    </div>
+  </div>
+
+  {% if messages %}
+    <div class="row">
+      <div class="col">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}" role="alert">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="row mb-3">
+    <div class="col">
+      {% if user_role == 'manager' or user_role == 'user' %}
+        <a href="{% url 'product_module:product_create' %}" class="btn btn-primary">
+          {% translate "Add New Product" %}
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="h5 mb-0">{% translate "Product List" %}</h2>
+        </div>
+        <div class="card-body">
+          {% if object_list %}
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>{% translate "Name" %}</th>
+                    <th>{% translate "Barcode" %}</th>
+                    <th>{% translate "Price" %}</th>
+                    <th>{% translate "Stock" %}</th>
+                    <th>{% translate "Actions" %}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for product in object_list %}
+                    <tr>
+                      <td>{{ product.name }}</td>
+                      <td>{{ product.barcode }}</td>
+                      <td>{{ product.price }}</td>
+                      <td>{{ product.stock }}</td>
+                      <td>
+                        <a href="{% url 'product_module:product_detail' product.id %}" class="btn btn-info btn-sm">
+                          {% translate "View" %}
+                        </a>
+                        {% if user_role == 'manager' or user_role == 'user' %}
+                          <a href="{% url 'product_module:product_update' product.id %}" class="btn btn-warning btn-sm">
+                            {% translate "Edit" %}
+                          </a>
+                        {% endif %}
+                        {% if user_role == 'manager' %}
+                          <button type="button" class="btn btn-danger btn-sm delete-product" data-id="{{ product.id }}">
+                            {% translate "Delete" %}
+                          </button>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p>{% translate "No products available." %}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteConfirmModalLabel">{% translate "Confirm Delete" %}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        {% translate "Are you sure to delete this data?" %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% translate "No" %}</button>
+        <button type="button" class="btn btn-danger" id="confirmDelete">{% translate "Yes" %}</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Delete product confirmation
+    const deleteButtons = document.querySelectorAll('.delete-product');
+    const confirmDeleteButton = document.getElementById('confirmDelete');
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+
+    let productIdToDelete = null;
+
+    deleteButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        productIdToDelete = this.getAttribute('data-id');
+        deleteModal.show();
+      });
+    });
+
+    confirmDeleteButton.addEventListener('click', function() {
+      if (productIdToDelete) {
+        // Send AJAX request to delete the product
+        fetch(`/product/${productIdToDelete}/delete/confirm/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': "{{csrf_token}}",
+            'Content-Type': 'application/json'
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // Reload the page after successful deletion
+            window.location.reload();
+          } else {
+            alert(data.message || 'Error deleting product');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('An error occurred while deleting the product');
+        })
+        .finally(() => {
+          deleteModal.hide();
+        });
+      }
+    });
+
+    // Function to get CSRF token from cookies
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+  });
+</script>
+{% endblock %}
+{% endblock %}

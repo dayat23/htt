@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}
+  {% if form_type == 'create' %}
+    {% translate "Create Product" %}
+  {% else %}
+    {% translate "Update Product" %}
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1>
+    {% if form_type == 'create' %}
+      {% translate "Create Product" %}
+    {% else %}
+      {% translate "Update Product" %}
+    {% endif %}
+  </h1>
+
+  <div class="row mb-3">
+    <div class="col">
+      <a href="{% url 'product_module:product_list' %}" class="btn btn-secondary">
+        {% translate "Back to List" %}
+      </a>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="h5 mb-0">
+            {% if form_type == 'create' %}
+              {% translate "Add New Product" %}
+            {% else %}
+              {% translate "Edit Product" %}
+            {% endif %}
+          </h2>
+        </div>
+        <div class="card-body">
+          <form method="post" action="{% if form_type == 'create' %}{% url 'product_module:product_create' %}{% else %}{% url 'product_module:product_update' product.id %}{% endif %}">
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label for="name" class="form-label">{% translate "Name" %}</label>
+              <input type="text" class="form-control" id="name" name="name" value="{% if product %}{{ product.name }}{% endif %}" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="barcode" class="form-label">{% translate "Barcode" %}</label>
+              <input type="text" class="form-control" id="barcode" name="barcode" value="{% if product %}{{ product.barcode }}{% endif %}" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="price" class="form-label">{% translate "Price" %}</label>
+              <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" value="{% if product %}{{ product.price }}{% endif %}" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="stock" class="form-label">{% translate "Stock" %}</label>
+              <input type="number" class="form-control" id="stock" name="stock" min="0" value="{% if product %}{{ product.stock }}{% endif %}" required>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary">
+                {% if form_type == 'create' %}
+                  {% translate "Create" %}
+                {% else %}
+                  {% translate "Update" %}
+                {% endif %}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

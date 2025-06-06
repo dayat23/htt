@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Confirm Delete" %}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1>{% translate "Confirm Delete" %}</h1>
+
+  <div class="row mb-3">
+    <div class="col">
+      <a href="{% url 'product_module:product_detail' product.id %}" class="btn btn-secondary">
+        {% translate "Back to Product" %}
+      </a>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header bg-danger text-white">
+          <h2 class="h5 mb-0">{% translate "Delete Product" %}</h2>
+        </div>
+        <div class="card-body">
+          <p>{% translate "Are you sure to delete this data?" %}</p>
+
+          <div class="alert alert-warning">
+            <strong>{% translate "Product" %}:</strong> {{ product.name }}
+          </div>
+
+          <form method="post" action="{% url 'product_module:product_delete' product.id %}">
+            {% csrf_token %}
+            <div class="d-flex gap-2">
+              <a href="{% url 'product_module:product_detail' product.id %}" class="btn btn-secondary">
+                {% translate "No" %}
+              </a>
+              <button type="submit" class="btn btn-danger">
+                {% translate "Yes" %}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -23,7 +23,8 @@ urlpatterns = [
     path("users/", include("htt.users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
     # Your stuff: custom urls includes go here
-    # ...
+    path("module/", include("htt.module_engine.urls", namespace="module_engine")),
+    path("product/", include("htt.product_module.urls", namespace="product_module")),
     # Media files
     *static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT),
 ]

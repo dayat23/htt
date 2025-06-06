@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Module Management" %}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1>{% translate "Module Management" %}</h1>
+
+  <div class="row mb-4">
+    <div class="col">
+      <p class="lead">{% translate "Manage your installed modules and discover new ones." %}</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="h5 mb-0">{% translate "Available Modules" %}</h2>
+        </div>
+        <div class="card-body">
+          {% if object_list %}
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>{% translate "Name" %}</th>
+                    <th>{% translate "Description" %}</th>
+                    <th>{% translate "Version" %}</th>
+                    <th>{% translate "Status" %}</th>
+                    <th>{% translate "Actions" %}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for module in object_list %}
+                    <tr>
+                      <td>{{ module.name }}</td>
+                      <td>{{ module.description }}</td>
+                      <td>{{ module.version }}</td>
+                      <td>
+                        {% if module.is_installed %}
+                          <span class="badge bg-success">{% translate "Installed" %}</span>
+                        {% else %}
+                          <span class="badge bg-secondary">{% translate "Not Installed" %}</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if module.is_installed %}
+                          <a href="{% url 'module_engine:upgrade_module' module.id %}" class="btn btn-warning btn-sm">
+                            {% translate "Upgrade" %}
+                          </a>
+                          <a href="{% url 'module_engine:uninstall_module' module.id %}" class="btn btn-danger btn-sm">
+                            {% translate "Uninstall" %}
+                          </a>
+                        {% else %}
+                          <a href="{% url 'module_engine:install_module' module.id %}" class="btn btn-primary btn-sm">
+                            {% translate "Install" %}
+                          </a>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p>{% translate "No modules available." %}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

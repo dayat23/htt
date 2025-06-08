@@ -1,8 +1,12 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from model_utils.models import TimeStampedModel
 
-class Module(models.Model):
+from htt.users.models import User
+
+
+class Module(TimeStampedModel):
     """
     Model to store information about available modules.
     """
@@ -21,3 +25,18 @@ class Module(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.version})"
+
+
+class ModuleInstallation(TimeStampedModel):
+
+    class StatusChoices(models.TextChoices):
+        INSTALLING = "installing", "Installing"
+        INSTALLED = "installed", "Installed"
+        UPGRADING = "upgrading", "Upgrading"
+        UNINSTALLING = "uninstalling", "Uninstalling"
+        FAILED = "failed", "Failed"
+
+    module = models.ForeignKey(Module, on_delete=models.CASCADE)
+    installed_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    installed_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=StatusChoices.choices)

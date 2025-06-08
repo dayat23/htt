@@ -6,7 +6,16 @@ from .models import Product
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ["name", "barcode", "price", "stock"]
+    raw_id_fields = ["created_by"]
+    list_display = ["name", "barcode", "price", "stock", "created_by"]
     list_filter = ["price", "stock"]
     search_fields = ["name", "barcode"]
     ordering = ["name"]
+    fieldsets = (
+        ('Product Information', {
+            'fields': ('name', 'barcode', 'price', 'stock'),
+        }),
+        ('Metadata', {
+            'fields': ('created_by',),
+        }),
+    )

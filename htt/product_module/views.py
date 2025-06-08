@@ -87,8 +87,14 @@ class ProductCreateView(LoginRequiredMixin, CreateView):
         ctx["user_role"] = get_user_role(self.request.user)
         return ctx
 
+    def form_invalid(self, form):
+        print(f"===== form errors {form.errors}")
+        return super().form_invalid(form)
+
     def form_valid(self, form):
-        self.object = form.save()
+        self.object = form.save(commit=False)
+        self.object.created_by = self.request.user
+        self.object.save()
         messages.success(self.request, _("Product created successfully."))
         return HttpResponseRedirect(reverse("product_module:product_detail", kwargs={"pk": self.object.id}))
 

@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, View
 
-from .models import Module
+from .models import Module, ModuleInstallation
 
 
 class ModulListView(LoginRequiredMixin, ListView):
@@ -21,8 +21,7 @@ class ModulListView(LoginRequiredMixin, ListView):
 class InstallModulView(LoginRequiredMixin, View):
 
     def dispatch(self, request, *args, **kwargs):
-        module_id = kwargs.get("module_id")
-        module = get_object_or_404(Module, id=module_id)
+        module = get_object_or_404(Module, id=kwargs.get("pk"))
 
         if module.is_installed:
             messages.warning(request, _("Module is already installed."))
@@ -41,6 +40,13 @@ class InstallModulView(LoginRequiredMixin, View):
             module.install_date = datetime.datetime.now()
             module.save()
 
+            # Create installation record
+            ModuleInstallation.objects.create(
+                module=module,
+                installed_by=request.user,
+                status=ModuleInstallation.StatusChoices.INSTALLED
+            )
+
             messages.success(request, _("Module installed successfully."))
         except (ImportError, AttributeError) as e:
             messages.error(request, _("Error installing module: {}").format(str(e)))
@@ -51,8 +57,7 @@ class InstallModulView(LoginRequiredMixin, View):
 class UpgradeModulView(LoginRequiredMixin, View):
 
     def dispatch(self, request, *args, **kwargs):
-        module_id = kwargs.get("module_id")
-        module = get_object_or_404(Module, id=module_id)
+        module = get_object_or_404(Module, id=kwargs.get("pk"))
 
         if not module.is_installed:
             messages.warning(request, _("Module is not installed."))
@@ -68,7 +73,15 @@ class UpgradeModulView(LoginRequiredMixin, View):
 
             # Update module status
             module.update_date = datetime.datetime.now()
+            module.version = request.POST.get("new_version", module.version)
             module.save()
+
+            # Update installation record
+            ModuleInstallation.objects.create(
+                module=module,
+                installed_by=request.user,
+                status=ModuleInstallation.StatusChoices.UPGRADING
+            )
 
             messages.success(request, _("Module upgraded successfully."))
         except (ImportError, AttributeError) as e:
@@ -80,8 +93,7 @@ class UpgradeModulView(LoginRequiredMixin, View):
 class UninstallModulView(LoginRequiredMixin, View):
 
     def dispatch(self, request, *args, **kwargs):
-        module_id = kwargs.get("module_id")
-        module = get_object_or_404(Module, id=module_id)
+        module = get_object_or_404(Module, id=kwargs.get("pk"))
 
         if not module.is_installed:
             messages.warning(request, _("Module is not installed."))
@@ -98,6 +110,13 @@ class UninstallModulView(LoginRequiredMixin, View):
             # Update module status
             module.is_installed = False
             module.save()
+
+            # Update installation record
+            ModuleInstallation.objects.create(
+                module=module,
+                installed_by=request.user,
+                status=ModuleInstallation.StatusChoices.UNINSTALLING
+            )
 
             messages.success(request, _("Module uninstalled successfully."))
         except (ImportError, AttributeError) as e:

@@ -47,6 +47,9 @@
                       </td>
                       <td>
                         {% if module.is_installed %}
+                          <a href="{% url 'product_module:product_list' %}" class="btn btn-primary btn-sm">
+                            {% translate "View Module" %}
+                          </a>
                           <a href="{% url 'module_engine:upgrade_module' module.id %}" class="btn btn-warning btn-sm">
                             {% translate "Upgrade" %}
                           </a>

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n module_engine_tags %}
 
 {% block title %}{% translate "Module Management" %}{% endblock %}
 
@@ -27,7 +27,7 @@
                   <tr>
                     <th>{% translate "Name" %}</th>
                     <th>{% translate "Description" %}</th>
-                    <th>{% translate "Version" %}</th>
+                    <th>{% translate "Current Version" %}</th>
                     <th>{% translate "Status" %}</th>
                     <th>{% translate "Actions" %}</th>
                   </tr>
@@ -37,22 +37,24 @@
                     <tr>
                       <td>{{ module.name }}</td>
                       <td>{{ module.description }}</td>
-                      <td>{{ module.version }}</td>
+                      <td>{{ module.get_version_latest }}</td>
                       <td>
-                        {% if module.is_installed %}
+                        {% if module|get_installation_status:request.user %}
                           <span class="badge bg-success">{% translate "Installed" %}</span>
                         {% else %}
                           <span class="badge bg-secondary">{% translate "Not Installed" %}</span>
                         {% endif %}
                       </td>
                       <td>
-                        {% if module.is_installed %}
+                        {% if module|get_installation_status:request.user %}
                           <a href="{% url 'product_module:product_list' %}" class="btn btn-primary btn-sm">
                             {% translate "View Module" %}
                           </a>
-                          <a href="{% url 'module_engine:upgrade_module' module.id %}" class="btn btn-warning btn-sm">
-                            {% translate "Upgrade" %}
-                          </a>
+                          {% if module|get_upgrading_status:request.user %}
+                            <a href="{% url 'module_engine:upgrade_module' module.id %}" class="btn btn-warning btn-sm">
+                              {% translate "Upgrade" %}
+                            </a>
+                          {% endif %}
                           <a href="{% url 'module_engine:uninstall_module' module.id %}" class="btn btn-danger btn-sm">
                             {% translate "Uninstall" %}
                           </a>

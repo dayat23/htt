@@ -1,7 +1,7 @@
-import datetime
 import importlib
 
 from django.contrib import messages
+from django.contrib.auth.models import Group
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
@@ -23,8 +23,8 @@ class InstallModulView(LoginRequiredMixin, View):
     def dispatch(self, request, *args, **kwargs):
         module = get_object_or_404(Module, id=kwargs.get("pk"))
 
-        if module.is_installed:
-            messages.warning(request, _("Module is already installed."))
+        if module.is_installed(self.request.user):
+            messages.warning(self.request, _("Module is already installed."))
             return HttpResponseRedirect(reverse("module_engine:module_list"))
 
         try:
@@ -35,17 +35,19 @@ class InstallModulView(LoginRequiredMixin, View):
             if hasattr(module_utils, "install"):
                 module_utils.install()
 
-            # Update module status
-            module.is_installed = True
-            module.install_date = datetime.datetime.now()
-            module.save()
-
             # Create installation record
-            ModuleInstallation.objects.create(
+            ModuleInstallation.objects.update_or_create(
                 module=module,
                 installed_by=request.user,
-                status=ModuleInstallation.StatusChoices.INSTALLED
+                defaults={
+                    "is_installed": True,
+                    "version": module.get_version_latest(),
+                }
             )
+
+            # Setup permissions
+            manager_group = Group.objects.get(name="product_manager")
+            self.request.user.groups.add(manager_group)
 
             messages.success(request, _("Module installed successfully."))
         except (ImportError, AttributeError) as e:
@@ -59,7 +61,7 @@ class UpgradeModulView(LoginRequiredMixin, View):
     def dispatch(self, request, *args, **kwargs):
         module = get_object_or_404(Module, id=kwargs.get("pk"))
 
-        if not module.is_installed:
+        if not module.is_installed(self.request.user):
             messages.warning(request, _("Module is not installed."))
             return HttpResponseRedirect(reverse("module_engine:module_list"))
 
@@ -71,16 +73,13 @@ class UpgradeModulView(LoginRequiredMixin, View):
             if hasattr(module_utils, "upgrade"):
                 module_utils.upgrade()
 
-            # Update module status
-            module.update_date = datetime.datetime.now()
-            module.version = request.POST.get("new_version", module.version)
-            module.save()
-
             # Update installation record
-            ModuleInstallation.objects.create(
+            ModuleInstallation.objects.update_or_create(
                 module=module,
                 installed_by=request.user,
-                status=ModuleInstallation.StatusChoices.UPGRADING
+                defaults={
+                    "version": module.get_version_latest()
+                }
             )
 
             messages.success(request, _("Module upgraded successfully."))
@@ -107,16 +106,18 @@ class UninstallModulView(LoginRequiredMixin, View):
             if hasattr(module_utils, "uninstall"):
                 module_utils.uninstall()
 
-            # Update module status
-            module.is_installed = False
-            module.save()
-
             # Update installation record
-            ModuleInstallation.objects.create(
+            ModuleInstallation.objects.update_or_create(
                 module=module,
                 installed_by=request.user,
-                status=ModuleInstallation.StatusChoices.UNINSTALLING
+                defaults={
+                    "is_installed": False
+                }
             )
+
+            # Setup permissions
+            manager_group = Group.objects.get(name="product_manager")
+            self.request.user.groups.remove(manager_group)
 
             messages.success(request, _("Module uninstalled successfully."))
         except (ImportError, AttributeError) as e:

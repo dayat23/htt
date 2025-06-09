@@ -1,24 +1,30 @@
 from django.contrib import admin
 
-from .models import Module, ModuleInstallation
+from .models import Module, ModuleVersion, ModuleInstallation
+
+
+class ModuleVersionInline(admin.TabularInline):
+    model = ModuleVersion
+    extra = 0
+    min_num = 1
 
 
 @admin.register(Module)
 class ModuleAdmin(admin.ModelAdmin):
-    list_display = ["name", "app_name", "version", "is_installed", "install_date", "update_date"]
-    list_filter = ["is_installed"]
+    inlines = [ModuleVersionInline]
+    list_display = ["name", "app_name"]
     search_fields = ["name", "app_name", "description"]
-    readonly_fields = ["install_date", "update_date"]
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'version', 'app_name', 'description'),
+            'fields': ('name', 'app_name', 'description'),
         }),
         ('Status', {
-            'fields': ('is_installed',),
+            'fields': ('is_active',),
         }),
     )
 
 
 @admin.register(ModuleInstallation)
 class ModuleInstallationAdmin(admin.ModelAdmin):
-    list_display = ["module", "installed_by", "installed_at", "status"]
+    raw_id_fields = ["module", "installed_by"]
+    list_display = ["module", "version", "is_installed", "installed_by", "installed_at", "modified"]

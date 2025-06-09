@@ -4,7 +4,7 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.utils.translation import gettext_lazy as _
 
@@ -17,17 +17,19 @@ from .module_utils import is_installed
 class ProductListView(LoginRequiredMixin, ListView):
     template_name = "product_module/product_list.html"
     model = Product
-    queryset = Product.objects.all()
+
+    def get_queryset(self):
+        return Product.objects.filter(created_by=self.request.user)
 
     def get(self, request, *args, **kwargs):
         # Check if module is installed
-        if not is_installed():
-            messages.error(request, _("The Product module is not installed."))
+        if not is_installed(self.request.user):
+            messages.error(self.request, _("The Product module is not installed."))
             return HttpResponseRedirect(reverse("home"))
 
         # Check if user has permission to view products
-        if not has_product_permission(request.user, "view_product"):
-            messages.error(request, _("You don't have permission to view products."))
+        if not has_product_permission(self.request.user, "view_product"):
+            messages.error(self.request, _("You don't have permission to view products."))
             return HttpResponseRedirect(reverse("home"))
 
         return super().get(request, *args, **kwargs)
@@ -41,17 +43,19 @@ class ProductListView(LoginRequiredMixin, ListView):
 class ProductDetailView(LoginRequiredMixin, DetailView):
     template_name = "product_module/product_detail.html"
     model = Product
-    queryset = Product.objects.all()
+
+    def get_queryset(self):
+        return Product.objects.filter(created_by=self.request.user)
 
     def get(self, request, *args, **kwargs):
         # Check if module is installed
-        if not is_installed():
-            messages.error(request, _("The Product module is not installed."))
+        if not is_installed(self.request.user):
+            messages.error(self.request, _("The Product module is not installed."))
             return HttpResponseRedirect(reverse("home"))
 
         # Check if user has permission to view products
-        if not has_product_permission(request.user, "view_product"):
-            messages.error(request, _("You don't have permission to view products."))
+        if not has_product_permission(self.request.user, "view_product"):
+            messages.error(self.request, _("You don't have permission to view products."))
             return HttpResponseRedirect(reverse("product_module:product_list"))
 
         return super().get(request, *args, **kwargs)
@@ -66,18 +70,20 @@ class ProductCreateView(LoginRequiredMixin, CreateView):
     template_name = "product_module/product_form.html"
     model = Product
     form_class = ProductForm
-    queryset = Product.objects.all()
     extra_context = {"form_type": "create"}
+
+    def get_queryset(self):
+        return Product.objects.filter(created_by=self.request.user)
 
     def get(self, request, *args, **kwargs):
         # Check if module is installed
-        if not is_installed():
-            messages.error(request, _("The Product module is not installed."))
+        if not is_installed(self.request.user):
+            messages.error(self.request, _("The Product module is not installed."))
             return HttpResponseRedirect(reverse("home"))
 
         # Check if user has permission to view products
-        if not has_product_permission(request.user, "view_product"):
-            messages.error(request, _("You don't have permission to view products."))
+        if not has_product_permission(self.request.user, "view_product"):
+            messages.error(self.request, _("You don't have permission to view products."))
             return HttpResponseRedirect(reverse("product_module:product_list"))
 
         return super().get(request, *args, **kwargs)
@@ -103,18 +109,20 @@ class ProductUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "product_module/product_form.html"
     model = Product
     form_class = ProductForm
-    queryset = Product.objects.all()
     extra_context = {"form_type": "update"}
+
+    def get_queryset(self):
+        return Product.objects.filter(created_by=self.request.user)
 
     def get(self, request, *args, **kwargs):
         # Check if module is installed
-        if not is_installed():
-            messages.error(request, _("The Product module is not installed."))
+        if not is_installed(self.request.user):
+            messages.error(self.request, _("The Product module is not installed."))
             return HttpResponseRedirect(reverse("home"))
 
         # Check if user has permission to view products
-        if not has_product_permission(request.user, "view_product"):
-            messages.error(request, _("You don't have permission to view products."))
+        if not has_product_permission(self.request.user, "view_product"):
+            messages.error(self.request, _("You don't have permission to view products."))
             return HttpResponseRedirect(reverse("product_module:product_list"))
 
         return super().get(request, *args, **kwargs)
@@ -138,13 +146,13 @@ class ProductDeleteView(LoginRequiredMixin, SuccessMessageMixin, DeleteView):
 
     def get(self, request, *args, **kwargs):
         # Check if module is installed
-        if not is_installed():
-            messages.error(request, _("The Product module is not installed."))
+        if not is_installed(self.request.user):
+            messages.error(self.request, _("The Product module is not installed."))
             return HttpResponseRedirect(reverse("home"))
 
         # Check if user has permission to view products
-        if not has_product_permission(request.user, "view_product"):
-            messages.error(request, _("You don't have permission to view products."))
+        if not has_product_permission(self.request.user, "view_product"):
+            messages.error(self.request, _("You don't have permission to view products."))
             return HttpResponseRedirect(reverse("product_module:product_list"))
 
         return super().get(request, *args, **kwargs)
@@ -156,7 +164,7 @@ def product_delete_confirm(request, pk):
     AJAX view to confirm product deletion.
     """
     # Check if module is installed
-    if not is_installed():
+    if not is_installed(request.user):
         return JsonResponse({"success": False, "message": _("The Product module is not installed.")})
 
     # Check if user has permission to delete products
@@ -166,6 +174,10 @@ def product_delete_confirm(request, pk):
     if request.method == "POST":
         try:
             product = get_object_or_404(Product, id=pk)
+
+            if product.created_by != request.user:
+                return JsonResponse({"success": False, "message": "Invalid product"})
+
             product.delete()
             return JsonResponse({"success": True})
         except Exception as e:

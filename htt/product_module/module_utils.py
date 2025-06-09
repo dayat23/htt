@@ -1,8 +1,5 @@
 import logging
-from django.conf import settings
 from django.db import connection
-from django.urls import reverse
-from django.utils import timezone
 
 from .permissions import setup_permissions
 
@@ -70,7 +67,7 @@ def uninstall():
     return True
 
 
-def is_installed():
+def is_installed(user):
     """
     Check if the product module is installed.
     """
@@ -78,6 +75,6 @@ def is_installed():
 
     try:
         module = Module.objects.get(app_name='product_module')
-        return module.is_installed
+        return module.is_installed(user)
     except Module.DoesNotExist:
         return False
